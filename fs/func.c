@@ -257,7 +257,8 @@ void cat(char *path) {
 	printf("\n");
 }
 
-void rm(char *path) {
+// flag为0表示删除文件，为1表示删除目录
+void rm(char *path, int flag) {
 	int inum = cwd;
 	int parsed_inum;
 	char backup[20];
@@ -272,6 +273,16 @@ void rm(char *path) {
 			break;
 		inum = parsed_inum;
 	}
+	struct inode *ip = iget(parsed_inum);
+	if (flag == 0 && ip->type == _DIRE) {
+		fprintf(stderr, "please use rm -r to remove directory\n");
+		return;
+	} else if (flag == 1 && ip->type == _FILE) {
+		fprintf(stderr, "please use rm to remove file\n");
+		return;
+	}
+	delete_file(inum, parsed_inum);
+	/*
 	// 到目前为止，被删除的文件和父目录已经准备好了
 	struct inode *ip = iget(parsed_inum);
 	if (ip->type != _FILE) {
@@ -308,4 +319,11 @@ void rm(char *path) {
 
 	// inode全置0
 	memset(ip, 0, sizeof(struct inode));
+	*/
 }
+
+/*
+void rm_dir(char *paht) {
+	
+}
+*/

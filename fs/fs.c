@@ -32,6 +32,9 @@ struct inode *ialloc(uint type) {
 	ip->type = type;
 	ip->size = 0;
 	memset(ip->data, 0, sizeof(uint) * NDIRECT);
+	/******debug*****/
+	// printf("inum %d\n", ip - (struct inode *)(img + BSIZE));
+	/****************/
 	return ip;
 }
 
@@ -272,3 +275,71 @@ int path_parse(int inum, char **path) {
 	}
 }
 
+// 调用函数需要保证iparent和inum的关系是父子关系
+// 该函数在iparent中删除inum
+void delete_file(int iparent, int inum) {
+	struct inode *ip = iget(inum);
+	struct inode *ip_parent = iget(iparent);
+	char *block;
+	struct dirent *dir;
+	int size;
+	// 如果被删除的是_FILE，直接删除
+	if (ip->type == _FILE) {
+		for (int i = 0; i < NDIRECT; i ++) {
+			if (ip->data[i]) {
+				bfree(ip->data[i]);
+				ip->data[i] = 0;
+			}
+		}	
+	} else if (ip->type == _DIRE) { 
+		printf("hi\n");
+		// 如果被删除的是_DIRE
+		for (int i = 0; i < NDIRECT; i ++)	{
+			if (ip->data[i]) { // 找到目录块
+				block = bget(ip->data[i]);
+				dir = (struct dirent *)block;
+				size = 0;
+				while (size < BSIZE) {
+					if (dir->inum) {
+						if (strcmp(dir->name, ".") == 0 || strcmp(dir->name, "..") == 0) {
+							// 如果是当前目录和父目录，直接删除		
+							memset(dir, 0, sizeof(struct dirent));
+						} else {
+							struct inode *ip_child = iget(dir->inum);
+							delete_file(inum, ip_child - (struct inode *)(img + BSIZE));
+						}
+					}
+					size += sizeof(struct dirent);
+					dir ++;
+				}
+				bfree(ip->data[i]);
+			}	
+		}
+	}
+
+	// 在父目录中删除该项
+	for (int i = 0; i < NDIRECT; i ++) {
+		if (ip_parent->data[i]) {
+			block = bget(ip_parent->data[i]);
+			dir = (struct dirent *)block;
+			size = 0;
+			int at_least_one = 0;
+			while (size < BSIZE) {
+				if (dir->inum == inum) {
+					memset(dir, 0, sizeof(struct dirent));
+				} else if (dir->inum != 0) {
+					at_least_one = 1;
+				}
+				size += sizeof(struct dirent);
+				dir ++;
+			}
+			if (at_least_one == 0) {
+				bfree(ip_parent->data[i]);
+				ip_parent->data[i] = 0;
+			}
+		}
+	}
+
+	// inode全置0
+	memset(ip, 0, sizeof(struct inode));
+}

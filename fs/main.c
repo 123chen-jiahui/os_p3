@@ -102,9 +102,10 @@ int main() {
 		} else if (strcmp(element[0], "rm") == 0) {
 			if (strcmp(element[1], "-r") == 0) {
 				// 删除一个目录	
+				rm(element[2], 1);
 			} else {
 				// 查处一个非目录文件
-				rm(element[1]);
+				rm(element[1], 0);
 			}	
 		}
 		/*
