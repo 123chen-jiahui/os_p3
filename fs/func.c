@@ -109,7 +109,7 @@ void pwd(int inum) {
 }
 
 void echo(char *content, char *path) {
-	printf("path is %s\n", path);
+	// printf("path is %s\n", path);
 	int inum = cwd;
 	int parsed_inum;
 	char backup[20]; // 暂存path
@@ -122,14 +122,14 @@ void echo(char *content, char *path) {
 	while (1) {
 		strcpy(backup, path);
 		parsed_inum = path_parse(inum, &path);
-		printf("parsed_inum is %d\n", parsed_inum);
+		// printf("parsed_inum is %d\n", parsed_inum);
 		if (parsed_inum == 0) { // 文件不存在
 			if (*path != '\0') { // 不是path的最后一项
 				fprintf(stderr, "path doesn't exist\n");
 				return;
 			} else {
-				printf("hi\n");
-				printf("%s\n", backup);
+				// printf("hi\n");
+				// printf("%s\n", backup);
 				// 创建inode
 				ip = ialloc(_FILE);
 				// 修改ip->size
@@ -139,13 +139,13 @@ void echo(char *content, char *path) {
 					content += staff;
 					block = balloc();
 					staff = BSIZE < size ? BSIZE: size; // 表示要转移的大小
-					printf("staff is %d\n", staff);
+					// printf("staff is %d\n", staff);
 					memmove(block, content, staff);
 					// 将该页放入ip->data中
 					int i;
 					for (i = 0; i < NDIRECT; i ++) {
 						if (ip->data[i] == 0) {
-							printf("NO: %d\n", i);
+							// printf("NO: %d\n", i);
 							ip->size += staff;
 							ip->data[i] = (block - img) / BSIZE;
 							break;
@@ -161,10 +161,11 @@ void echo(char *content, char *path) {
 				}
 				// 修改父目录的信息, inum就是父目录
 				// 更新大小，更新目录项
-				printf("inum is %d\n", inum);
+				// printf("inum is %d\n", inum);
 				ip_parent = iget(inum);
 				ip_parent->size += ip->size;
-				printf("add ok? %d\n", add_entry(ip_parent, ip - (struct inode *)(img + BSIZE), backup));
+				add_entry(ip_parent, ip - (struct inode *)(img + BSIZE), backup);
+				// printf("add ok? %d\n", add_entry(ip_parent, ip - (struct inode *)(img + BSIZE), backup));
 				return;
 			}
 		}
@@ -184,13 +185,13 @@ void echo(char *content, char *path) {
 		fprintf(stderr, "can not write a directory\n");
 		return;
 	}
-	printf("here!\n");
+	// printf("here!\n");
 	// printf("parent is %d\n", find_file(inum, ".."));
 	// ip_parent = iget(find_file(inum, ".."));
 	ip_parent = iget(inum);
-	printf("before ip_parent->size is %d\n", ip_parent->size);
+	// printf("before ip_parent->size is %d\n", ip_parent->size);
 	ip_parent->size -= ip->size; // 暂时删除size,size更新后会加回去
-	printf("after ip_parent->size is %d\n", ip_parent->size);
+	// printf("after ip_parent->size is %d\n", ip_parent->size);
 	int bnum = ip->data[ip->size / BSIZE]; // 找到上次写到最后的块号bnum
 	block = bget(bnum);
 	int written = ip->size % BSIZE;
@@ -223,7 +224,7 @@ void echo(char *content, char *path) {
 		size -= staff;
 	}
 	ip_parent->size += ip->size;
-	printf("ip_parent->size if %d\n", ip_parent->size);
+	// printf("ip_parent->size if %d\n", ip_parent->size);
 	// add_entry(ip_parent, ip - (struct inode *)(img + BSIZE), backup);
 }
 

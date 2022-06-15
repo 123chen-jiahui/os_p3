@@ -37,9 +37,9 @@ int main() {
 	if (fd == -1) {
 		printf("can not open img\n");
 		init();	
-	} else {
-		load_img(fd);		
+		fd = open("img", O_RDWR);
 	}
+	load_img(fd);		
 	cwd = ROOTNO;
 	/*
     int shmid_buffer;

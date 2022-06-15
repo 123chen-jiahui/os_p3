@@ -38,6 +38,7 @@ int init() {
 		exit(-1);
 	}
 	write(fd, img, 1024 * BSIZE);
-	show_info();
+	close(fd);
+	// show_info();
 	return 0;
 }
