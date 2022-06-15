@@ -99,6 +99,13 @@ int main() {
 			}
 		} else if (strcmp(element[0], "cat") == 0) {
 			cat(element[1]);
+		} else if (strcmp(element[0], "rm") == 0) {
+			if (strcmp(element[1], "-r") == 0) {
+				// 删除一个目录	
+			} else {
+				// 查处一个非目录文件
+				rm(element[1]);
+			}	
 		}
 		/*
 		if (strcmp(command, "quit") == 0) {

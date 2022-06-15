@@ -62,6 +62,23 @@ char *balloc() {
 	return NULL; // fail
 }
 
+// 回收指定bnum的block
+// 将块内所有字节置为0，并在bitmap中将对应位置0
+void bfree(int bnum) {
+	char *block = bget(bnum);
+	memset(block, 0, BSIZE);
+		
+	char *bitmap = img + sb->bmapstart * BSIZE;
+	char *byte = bitmap + bnum / 8;
+	int left = bnum % 8;
+	int item = 0;
+	for (int i = 0; i < 8; i ++) {
+		if (i != left)
+			item += (1 << i);
+	}
+	*byte &= item;
+}
+
 /**************这个函数已被废弃********************
 // 插入一个目录
 int add_file(int inum, char *name, uint type) {
@@ -254,3 +271,4 @@ int path_parse(int inum, char **path) {
 		return find_file(inum, prefix);
 	}
 }
+

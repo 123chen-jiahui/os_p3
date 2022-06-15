@@ -256,3 +256,56 @@ void cat(char *path) {
 	}
 	printf("\n");
 }
+
+void rm(char *path) {
+	int inum = cwd;
+	int parsed_inum;
+	char backup[20];
+	while (1) {
+		strcpy(backup, path);
+		parsed_inum = path_parse(inum, &path);
+		if (parsed_inum == 0) {
+			fprintf(stderr, "path doesn't exist\n");
+			return;
+		}
+		if (*path == '\0')
+			break;
+		inum = parsed_inum;
+	}
+	// 到目前为止，被删除的文件和父目录已经准备好了
+	struct inode *ip = iget(parsed_inum);
+	if (ip->type != _FILE) {
+		fprintf(stderr, "can not remove %s: wrong type\n", backup);
+		return;
+	}
+	struct inode *ip_parent = iget(inum);
+	for (int i = 0; i < NDIRECT; i ++) {
+		if (ip->data[i])
+			bfree(ip->data[i]);
+	}
+
+	// 在父目录中删除该项
+	for (int i = 0; i < NDIRECT; i ++) {
+		if (ip_parent->data[i] == 0)
+			continue;
+		char *block = bget(ip_parent->data[i]);
+		int at_least_one = 0;
+		struct dirent *dir = (struct dirent *)block;
+		int size = 0;
+		while (size < BSIZE) {
+			if (strcmp(dir->name, backup) == 0) {
+				memset(dir, 0, sizeof(struct dirent));
+			} else if (dir->inum != 0) {
+				at_least_one = 1;	
+			}
+			size += sizeof(struct dirent);
+			dir ++;
+		}
+		if (at_least_one == 0) { // 顺便把目录中空的页释放了
+			bfree(ip_parent->data[i]);
+		}
+	}
+
+	// inode全置0
+	memset(ip, 0, sizeof(struct inode));
+}

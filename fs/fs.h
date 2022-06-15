@@ -46,3 +46,4 @@ int path_parse(int, char **);
 char *bget(uint);
 char *balloc();
 int add_entry(struct inode *, int, char *);
+void bfree(int);
