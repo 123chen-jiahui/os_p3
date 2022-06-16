@@ -180,13 +180,28 @@ int add_entry(struct inode *ip, int inum, char *name) {
 	if (ip == NULL || ip->type != _DIRE)
 		return 0;
 
-	int index;
 	int mark = -1;
-	// int flag = 0; // 没找到
+	int flag = 0;
 	char *block;
 	struct dirent *dir_entry;
 	/********************************************************/
-	// 第一遍找，在现有的块中找空闲的entry
+	// 第一遍找，判断文件已经存在
+	for (int index = 0; index < NDIRECT; index ++) {
+		if (ip->data[index]) {
+			block = bget(ip->data[index]);
+			dir_entry = (struct dirent *)block;
+			int size = 0;
+			while (size < BSIZE) {
+				if (dir_entry->inum != 0 && strcmp(dir_entry->name, name) == 0) {
+					fprintf(stderr, "%s already exist\n", name);
+					return 0;
+				}
+				size += sizeof(struct dirent);
+				dir_entry ++;
+			}
+		}
+	}
+	// 第二遍找，在现有的块中找空闲的entry
 	for (int index = 0; index < NDIRECT; index ++) {
 		if (ip->data[index] == 0 && mark == -1)
 			mark = index;
@@ -199,7 +214,9 @@ int add_entry(struct inode *ip, int inum, char *name) {
 					// 将信息填入其中
 					dir_entry->inum = inum;
 					strncpy(dir_entry->name, name, MAXSIZE - 1);
-					printf("py is %d. inum is %d. name is %s\n", dir_entry - (struct dirent *)block, inum, name);
+					/*****debug*****/
+					// printf("py is %d. inum is %d. name is %s\n", dir_entry - (struct dirent *)block, inum, name);
+					/***************/
 					return 1;
 				}
 				size += sizeof(struct dirent);
@@ -217,9 +234,9 @@ int add_entry(struct inode *ip, int inum, char *name) {
 		dir_entry->inum = inum;
 		strncpy(dir_entry->name, name, MAXSIZE - 1);
 		ip->data[mark] = (block - img) / BSIZE;
-		printf("ip->data[makr] is %d\n", ip->data[mark]);
 		/*****debug*****/
-		printf("mark is %d. inum is %d. name is %s\n", mark, inum, name);
+		// printf("ip->data[makr] is %d\n", ip->data[mark]);
+		// printf("mark is %d. inum is %d. name is %s\n", mark, inum, name);
 		/***************/
 		return 1;
 	}
@@ -282,20 +299,15 @@ int mkdir(int iparent, char *name) {
 		ip_child = (struct inode *)(img + BSIZE) + 1;	
 		ip_child->type = _DIRE;
 		add_entry(ip_child, ROOTNO, ".");
-		printf("hello\n");
 		add_entry(ip_child, ROOTNO, "..");
-		printf("hi\n");
 	} else {
 		ip_child = ialloc(_DIRE);
 		// ip_child->type = _DIRE;
 		int inum = ip_child - (struct inode *)(img + BSIZE);
-		if (add_entry(ip_child, inum, "."))
-			printf("yes!\n");
-		if (add_entry(ip_child, iparent, ".."))
-			printf("yes!\n");
+		add_entry(ip_child, inum, ".");
+		add_entry(ip_child, iparent, "..");
 		ip_parent = iget(iparent);
-		if (add_entry(ip_parent, inum, name))
-			printf("yes!\n");
+		add_entry(ip_parent, inum, name);
 	}
 }
 
@@ -342,7 +354,6 @@ void delete_file(int iparent, int inum) {
 			}
 		}	
 	} else if (ip->type == _DIRE) { 
-		printf("hi\n");
 		// 如果被删除的是_DIRE
 		for (int i = 0; i < NDIRECT; i ++)	{
 			if (ip->data[i]) { // 找到目录块
@@ -362,7 +373,7 @@ void delete_file(int iparent, int inum) {
 					size += sizeof(struct dirent);
 					dir ++;
 				}
-				// bfree(ip->data[i]);
+				// bfree(ip->data[i]); // the bug took me 2 hours!
 				// ip->data[i] = 0;
 			}	
 		}

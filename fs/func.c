@@ -86,7 +86,7 @@ void cd(int inum, char *dir_name) {
 */
 
 void pwd(int inum) {
-	printf("inum is %d\n", inum);
+	// printf("inum is %d\n", inum);
 	assert(inum != 0);
 	if (inum == 1) {
 		printf("/");
@@ -143,7 +143,7 @@ void echo(char *content, char *path) {
 				while (size > 0) {
 					content += staff;
 					block = balloc();
-					printf("block alloc: %d\n", (block - img) / BSIZE);
+					// printf("block alloc: %d\n", (block - img) / BSIZE);
 					staff = BSIZE < size ? BSIZE: size; // 表示要转移的大小
 					// printf("staff is %d\n", staff);
 					memmove(block, content, staff);
@@ -287,7 +287,9 @@ void rm(char *path, int flag) {
 		fprintf(stderr, "please use rm to remove file\n");
 		return;
 	}
-	printf("about to delete inum: %d, parsed_inum: %d\n", inum, parsed_inum);
+	/*****debug*****/
+	// printf("about to delete inum: %d, parsed_inum: %d\n", inum, parsed_inum);
+	/***************/
 	delete_file(inum, parsed_inum);
 	/*
 	// 到目前为止，被删除的文件和父目录已经准备好了

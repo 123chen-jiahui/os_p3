@@ -23,16 +23,28 @@ void load_img(int fd) {
 	}
 	sb = (struct super_block *)img;
 	show_info();
-	/*
-	printf("load the image file successfully\n");
-	printf("file system version: %u.0\n", sb->version);
-	printf("total size %uKB\n", sb->size / 1024);
-	printf("%u inodes\n", sb->ninodes);
-	printf("%u blocks\n", sb->nblocks);
-	*/
+}
+
+void usage() {
+	printf("**********************************************************\n");
+	printf("command                usage\n");
+	printf("----------------------------------------------------------\n");
+	printf("pwd                    show current work directory\n");
+	printf("cd                     change work directory\n");
+	printf("ls                     show all files in current directory\n");
+	printf("echo staff > path      write staff to filename.\n");
+	printf("rm                     remove a file(not a directory)\n");
+	printf("rm -r path             remove a directory\n");
+	printf("cat path               show the content of a file\n");
+	printf("mkdir path             create a new directory\n");
+	printf("quit                   quit file system\n");
+	printf("help                   show these information to get help\n");
+	printf("**********************************************************\n");
 }
 
 int main() {
+	// load img
+	// if img does not exist, create one
 	int fd = open("img", O_RDWR);
 	if (fd == -1) {
 		printf("can not open img\n");
@@ -41,12 +53,8 @@ int main() {
 	}
 	load_img(fd);		
 	cwd = ROOTNO;
-	/*
-    int shmid_buffer;
-    int *shmaddr_buffer;
-    shmaddr_buffer = (int *)connect(&shmid_buffer, 1, 4);
-	*shmaddr_buffer = ROOTNO;
-	*/
+
+	usage();
 
 	while (1) {
 		printf("$ ");
@@ -107,38 +115,12 @@ int main() {
 				// 查处一个非目录文件
 				rm(element[1], 0);
 			}	
-		}
-		/*
-		if (strcmp(command, "quit") == 0) {
-			break;
-		} else if (strcmp(command, "ls") == 0) {
-			ls();	
+		} else if (strcmp(element[0], "help") == 0) {
+			usage();	
 		} else {
-			printf("invalid command:%s\n", command);
+			fprintf(stderr, "invalid command\n");
 		}
-		*/
 	}
 		
-	/*
-	while (1) {
-		fprintf(stderr, "$ ");
-		char command[20];
-		fgets(command, 20, stdin);
-		command[strlen(command) - 1] = '\0';
-		// printf("command is %s len is %d\n", command, strlen(command));
-		if (strcmp("quit", command) == 0)
-			break;
-		int pid = fork();
-		if (pid == 0) { // child
-			char path[50];
-			sprintf(path, "./%s", command);
-			execlp(path, command, NULL);
-			fprintf(stderr, "invalid command:%s\n", command);
-			exit(0);
-		} else { // parent
-			wait(NULL);	
-		}	
-	}
-	*/
 	return 0;
 }

@@ -1,5 +1,4 @@
 int init();
-void *connect(int *, int, int);
 void show_info();
 void ls();
 void cd(char *);
