@@ -22,12 +22,17 @@ void ls() {
 				struct inode *inner_ip = iget(dir->inum);
 				if (inner_ip->type == _DIRE)	{
 					if (strcmp(dir->name, ".") == 0 || strcmp(dir->name, "..") == 0)
-						printf("%s\n", dir->name);
-					else 
-						printf("%s/\n", dir->name);
+						printf("%-20s", dir->name);
+					else  {
+						char filename[23];
+						memset(filename, 0, sizeof(filename));
+						sprintf(filename, "%s/", dir->name);
+						printf("%-20s", filename);
+					}
 				}
 				else
-					printf("%s\n", dir->name);
+					printf("%-20s", dir->name);
+				printf("%dbytes\n", inner_ip->size);
 			}
 			size += sizeof(struct dirent);
 			dir ++;
@@ -122,6 +127,7 @@ void echo(char *content, char *path) {
 	int size = strlen(content) + 1;
 	// printf("content is %s, size if %ld\n", content, sizeof(content));
 	int staff = 0; // 表示本次拷贝的字节数
+	int grow = 0; // 用于统计增加的字节数
 	char *block; // 用于表示块
 	// char *start = content; // content的副本
 	while (1) {
@@ -152,7 +158,8 @@ void echo(char *content, char *path) {
 					for (i = 0; i < NDIRECT; i ++) {
 						if (ip->data[i] == 0) {
 							// printf("NO: %d\n", i);
-							ip->size += staff;
+							// ip->size += staff;
+							grow += staff;
 							ip->data[i] = (block - img) / BSIZE;
 							break;
 						}
@@ -166,10 +173,12 @@ void echo(char *content, char *path) {
 					size -= staff;
 				}
 				// 修改父目录的信息, inum就是父目录
-				// 更新大小，更新目录项
+				// (注意，这里应该递归地更新大小)更新大小，更新目录项
 				// printf("inum is %d\n", inum);
 				ip_parent = iget(inum);
-				ip_parent->size += ip->size;
+				ip->size += grow;
+				update_size(ip_parent, grow);
+				// ip_parent->size += ip->size;
 				add_entry(ip_parent, ip - (struct inode *)(img + BSIZE), backup);
 				// printf("add ok? %d\n", add_entry(ip_parent, ip - (struct inode *)(img + BSIZE), backup));
 				return;
@@ -191,12 +200,9 @@ void echo(char *content, char *path) {
 		fprintf(stderr, "can not write a directory\n");
 		return;
 	}
-	// printf("here!\n");
-	// printf("parent is %d\n", find_file(inum, ".."));
-	// ip_parent = iget(find_file(inum, ".."));
 	ip_parent = iget(inum);
 	// printf("before ip_parent->size is %d\n", ip_parent->size);
-	ip_parent->size -= ip->size; // 暂时删除size,size更新后会加回去
+	// ip_parent->size -= ip->size; // 暂时删除size,size更新后会加回去
 	// printf("after ip_parent->size is %d\n", ip_parent->size);
 	int bnum = ip->data[ip->size / BSIZE]; // 找到上次写到最后的块号bnum
 	block = bget(bnum);
@@ -205,7 +211,8 @@ void echo(char *content, char *path) {
 	staff = left < size ? left : size;
 	memmove(block + written, content, staff); // 拷贝内容到未满的页面
 	size -= staff;
-	ip->size += staff;
+	// ip->size += staff;
+	grow += staff;
 	// written += staff;
 	while (size) { // 如果还有内容未拷贝，要分配新块
 		block = balloc();
@@ -216,7 +223,8 @@ void echo(char *content, char *path) {
 		int i;
 		for (i = 0; i < NDIRECT; i ++) {
 			if (ip->data[i] == 0) {
-				ip->size += staff;
+				// ip->size += staff;
+				grow += staff;
 				ip->data[i] = (block - img) / BSIZE;
 				break;
 			}
@@ -224,12 +232,17 @@ void echo(char *content, char *path) {
 		if (i >= NDIRECT) {
 			// 到这里说明ip->data没有空间了, 应返回错误
 			// 同时应该修改ip->size
+			ip->size += grow;
+			update_size(ip_parent, grow);
 			fprintf(stderr, "file out of memory\n");
-			break;
+			return;
+			// break;
 		}
 		size -= staff;
 	}
-	ip_parent->size += ip->size;
+	ip->size += grow;
+	update_size(ip_parent, grow);
+	// ip_parent->size += ip->size;
 	// printf("ip_parent->size if %d\n", ip_parent->size);
 	// add_entry(ip_parent, ip - (struct inode *)(img + BSIZE), backup);
 }

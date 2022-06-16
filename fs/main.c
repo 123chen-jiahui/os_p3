@@ -94,7 +94,8 @@ int main() {
 			pwd(cwd);
 			printf("\n");
 		} else if (strcmp(element[0], "mkdir") == 0) {
-			mkdir(cwd, element[1]);
+			if (strlen(element[1]) != 0)
+				mkdir(cwd, element[1]);
 		} else if (strcmp(element[0], "cd") == 0) {
 			cd(element[1]);
 		} else if (strcmp(element[0], "echo") == 0) {

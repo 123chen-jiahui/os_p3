@@ -48,3 +48,4 @@ char *balloc();
 int add_entry(struct inode *, int, char *);
 void bfree(int);
 void delete_file(int, int);
+void update_size(struct inode *, int);

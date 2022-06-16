@@ -256,6 +256,29 @@ int path_parse(int inum, char **path) {
 	}
 }
 
+// 递归地更新inum的大小
+void update_size(struct inode *ip, int grow) {
+	static int flag = 0; // 根目录不能被无限递归
+	// ip必须是一个目录
+	if (ip->type != _DIRE) {
+		return;
+	}
+	
+	int inum = ip - (struct inode *)(img + BSIZE);
+	if (inum == ROOTNO) {
+		if (flag == 1) {
+			flag = 0;
+			return;
+		}
+		else
+			flag = 1;
+	}
+	ip->size += grow;
+	int iparent = find_file(inum, "..");
+	ip = iget(iparent);
+	update_size(ip, grow);
+}
+
 // 调用函数需要保证iparent和inum的关系是父子关系
 // 该函数在iparent中删除inum
 void delete_file(int iparent, int inum) {
@@ -265,6 +288,7 @@ void delete_file(int iparent, int inum) {
 	struct dirent *dir;
 	int size;
 	// 如果被删除的是_FILE，直接删除
+	// 只有_FILE被删除时，才需要更新size
 	if (ip->type == _FILE) {
 		for (int i = 0; i < NDIRECT; i ++) {
 			if (ip->data[i]) {
@@ -272,6 +296,7 @@ void delete_file(int iparent, int inum) {
 				ip->data[i] = 0;
 			}
 		}
+		update_size(ip_parent, -1 * ip->size);
 	} else if (ip->type == _DIRE) {
 		// 如果被删除的是_DIRE
 		for (int i = 0; i < NDIRECT; i ++)	{
