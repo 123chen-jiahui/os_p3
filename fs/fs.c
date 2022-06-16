@@ -6,11 +6,11 @@ extern struct super_block *sb;
 
 // 显示文件系统的信息
 void show_info() {
-    printf("load the image file successfully\n");
-    printf("file system version: %u.0\n", sb->version);
-    printf("total size %uKB\n", sb->size / 1024);
-    printf("%u inodes\n", sb->ninodes);
-    printf("%u blocks\n", sb->nblocks);	
+	printf("load the image file successfully\n");
+	printf("file system version: %u.0\n", sb->version);
+	printf("total size %uKB\n", sb->size / 1024);
+	printf("%u inodes\n", sb->ninodes);
+	printf("%u blocks\n", sb->nblocks);
 }
 
 // 给定一个inum，返回struct inode *
@@ -25,7 +25,7 @@ char *bget(uint bnum) {
 
 // 分配一个空闲的inode
 struct inode *ialloc(uint type) {
-	struct inode *ip = (struct inode *)(img + BSIZE + 2 * sizeof(struct inode));	
+	struct inode *ip = (struct inode *)(img + BSIZE + 2 * sizeof(struct inode));
 	while (ip->type != 0) {
 		ip ++;
 	}
@@ -68,10 +68,10 @@ char *balloc() {
 // 回收指定bnum的block
 // 将块内所有字节置为0，并在bitmap中将对应位置0
 void bfree(int bnum) {
-	printf("free bnum: %d\n", bnum);
+	// printf("free bnum: %d\n", bnum);
 	char *block = bget(bnum);
 	memset(block, 0, BSIZE);
-		
+
 	char *bitmap = img + sb->bmapstart * BSIZE;
 	char *byte = bitmap + bnum / 8;
 	int left = bnum % 8;
@@ -81,67 +81,8 @@ void bfree(int bnum) {
 			item += (1 << i);
 	}
 	*byte &= item;
-	printf("byte is %d\n", (int)*byte);
+	// printf("byte is %d\n", (int)*byte);
 }
-
-/**************这个函数已被废弃********************
-// 插入一个目录
-int add_file(int inum, char *name, uint type) {
-	struct inode *ip = iget(inum);
-	// 只有目录中才能添加文件
-	if (ip->type != _DIRE) 
-		return 0;
-	
-	// 枚举直接索引，找到第一个不为零的数
-	int index;
-	char *block;
-	struct dirent *dir_entry;
-	struct inode *new_ip;
-	int flag = 0; // 没找到
-	for (index = NDIRECT - 1; index >= 0 && flag == 0; index --) {
-		if (ip->data[index] != 0) {
-			block = bget(ip->data[index]);
-			dir_entry = (struct dirent *)block;
-			int size = 0;
-			while (dir_entry->inum != 0 && size < BSIZE) {
-				dir_entry ++;
-				size += sizeof(struct dirent);
-			}
-			// 该页目录项满了
-			if (size >= BSIZE) {
-				index ++;	
-				break;				
-			}
-			// 没满
-			// 如果是.目录
-			if ()
-			new_ip = ialloc(type); // 申请新的inode
-			// 将inum填入entry
-			dir_entry->inum = new_ip - (struct inode *)(img + BSIZE);
-			// 将文件名写入entry
-			strncpy(dir_entry->name, name, MAXSIZE - 1);
-			flag = 1;
-			break;
-		}
-	}	
-	if (flag == 0) {
-		if (index >= NDIRECT)
-			return 0;
-		else {
-			if (index < 0)
-				index = 0;
-			block = balloc();
-			ip->data[index] = (block - img) / BSIZE;
-			dir_entry = (struct dirent *)block;
-			new_ip = ialloc(type);
-			dir_entry->inum = new_ip - (struct inode *)(img + BSIZE);
-			strncpy(dir_entry->name, name, MAXSIZE - 1);
-			flag = 1;
-		}
-	}
-	return 1;
-}
-************************************************/
 
 // 在inum中找name
 int find_file(int inum, char *name) {
@@ -152,26 +93,15 @@ int find_file(int inum, char *name) {
 		char *block = bget(ip->data[i]);
 		struct dirent *dir = (struct dirent *)block;
 		int size = 0;
-        while (size < BSIZE && dir->inum) {
+		while (size < BSIZE && dir->inum) {
 			if (strcmp(dir->name, name) == 0)
 				return dir->inum;
-            size += sizeof(struct dirent);
-            dir ++;
-        }
-	}	
+			size += sizeof(struct dirent);
+			dir ++;
+		}
+	}
 	return 0;
 }
-
-/*
-int find_parent_dir(int inum) {
-	for (int i = 1; i < sb->ninodes; i ++) { // 枚举所有inode
-		struct inode *ip = iget(i);
-		for (int j = 0; j < NDIRECT; j ++) {
-			if (ip->data[i] == 0)	
-		}	
-	}
-}
-*/
 
 
 // 在ip中添加目录项(inum, name)
@@ -185,6 +115,7 @@ int add_entry(struct inode *ip, int inum, char *name) {
 	char *block;
 	struct dirent *dir_entry;
 	/********************************************************/
+	/*该部分是多于的，因为判断文件是否已经存在由mkdir判断
 	// 第一遍找，判断文件已经存在
 	for (int index = 0; index < NDIRECT; index ++) {
 		if (ip->data[index]) {
@@ -201,7 +132,8 @@ int add_entry(struct inode *ip, int inum, char *name) {
 			}
 		}
 	}
-	// 第二遍找，在现有的块中找空闲的entry
+	*/
+	// 第一遍找，在现有的块中找空闲的entry
 	for (int index = 0; index < NDIRECT; index ++) {
 		if (ip->data[index] == 0 && mark == -1)
 			mark = index;
@@ -222,7 +154,7 @@ int add_entry(struct inode *ip, int inum, char *name) {
 				size += sizeof(struct dirent);
 				dir_entry ++;
 			}
-		}	
+		}
 	}
 	// 没找到，说明要申请新块来存目录项，也就是mark
 	if (mark == -1) { // 说明ip->data[index]全不为0，无法申请
@@ -240,47 +172,6 @@ int add_entry(struct inode *ip, int inum, char *name) {
 		/***************/
 		return 1;
 	}
-	/********************************************************/
-	/*
-	for (index = NDIRECT - 1; index >= 0 && flag == 0; index --) {
-		if (ip->data[index] != 0) {
-			block = bget(ip->data[index]);
-			dir_entry = (struct dirent *)block;
-			int size = 0;
-			while (dir_entry->inum != 0 && size < BSIZE) {
-				dir_entry ++;
-				size += sizeof(struct dirent);
-			}
-			// 该页目录项满了
-			if (size >= BSIZE) {
-				index ++;	
-				break;				
-			}
-			// 没满
-			// 将inum填入entry
-			dir_entry->inum = inum;
-			// 将文件名写入entry
-			strncpy(dir_entry->name, name, MAXSIZE - 1);
-			flag = 1;
-			break;
-		}
-	}	
-	if (flag == 0) {
-		if (index >= NDIRECT)
-			return 0;
-		else {
-			if (index < 0)
-				index = 0;
-			block = balloc();
-			ip->data[index] = (block - img) / BSIZE;
-			dir_entry = (struct dirent *)block;
-			dir_entry->inum = inum;
-			strncpy(dir_entry->name, name, MAXSIZE - 1);
-			flag = 1;
-		}
-	}
-	return 1;
-	*/
 }
 
 // 在iparent中创建一个名为name的目录
@@ -296,11 +187,38 @@ int add_entry(struct inode *ip, int inum, char *name) {
 int mkdir(int iparent, char *name) {
 	struct inode *ip_child, *ip_parent;
 	if (iparent == 0) {
-		ip_child = (struct inode *)(img + BSIZE) + 1;	
+		ip_child = (struct inode *)(img + BSIZE) + 1;
 		ip_child->type = _DIRE;
 		add_entry(ip_child, ROOTNO, ".");
 		add_entry(ip_child, ROOTNO, "..");
 	} else {
+		int parsed_inum;
+		char backup[20];
+		while (1) {
+			strcpy(backup, name);
+			parsed_inum = path_parse(iparent, &name);
+			if (parsed_inum == 0) {
+				if (*name != 0) { // 中途就解析失败，说明路径错误
+					fprintf(stderr, "invalid path\n");
+					return 0;
+				}	
+				ip_child = ialloc(_DIRE);
+				// ip_child->type = _DIRE;
+				int inum = ip_child - (struct inode *)(img + BSIZE);
+				add_entry(ip_child, inum, ".");
+				add_entry(ip_child, iparent, "..");
+				ip_parent = iget(iparent);
+				add_entry(ip_parent, inum, backup);
+				return 1;
+			}
+			if (*name == '\0') { // 竟能一条路走到底，则文件已存在
+				fprintf(stderr, "%s already exist\n", backup);
+				return 0;
+			}
+			iparent = parsed_inum;
+		}
+
+		/*
 		ip_child = ialloc(_DIRE);
 		// ip_child->type = _DIRE;
 		int inum = ip_child - (struct inode *)(img + BSIZE);
@@ -308,6 +226,7 @@ int mkdir(int iparent, char *name) {
 		add_entry(ip_child, iparent, "..");
 		ip_parent = iget(iparent);
 		add_entry(ip_parent, inum, name);
+		*/
 	}
 }
 
@@ -320,8 +239,8 @@ int path_parse(int inum, char **path) {
 	// printf("%c\n", **path);
 	if (**path == '/') {
 		while (**path == '/')
-			(*path) ++;	
-		return ROOTNO;	
+			(*path) ++;
+		return ROOTNO;
 	} else {
 		char prefix[20];
 		int i = 0;
@@ -352,8 +271,8 @@ void delete_file(int iparent, int inum) {
 				bfree(ip->data[i]);
 				ip->data[i] = 0;
 			}
-		}	
-	} else if (ip->type == _DIRE) { 
+		}
+	} else if (ip->type == _DIRE) {
 		// 如果被删除的是_DIRE
 		for (int i = 0; i < NDIRECT; i ++)	{
 			if (ip->data[i]) { // 找到目录块
@@ -363,7 +282,7 @@ void delete_file(int iparent, int inum) {
 				while (size < BSIZE) {
 					if (dir->inum) {
 						if (strcmp(dir->name, ".") == 0 || strcmp(dir->name, "..") == 0) {
-							// 如果是当前目录和父目录，直接删除		
+							// 如果是当前目录和父目录，直接删除
 							memset(dir, 0, sizeof(struct dirent));
 						} else {
 							struct inode *ip_child = iget(dir->inum);
@@ -375,7 +294,7 @@ void delete_file(int iparent, int inum) {
 				}
 				// bfree(ip->data[i]); // the bug took me 2 hours!
 				// ip->data[i] = 0;
-			}	
+			}
 		}
 	}
 
