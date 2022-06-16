@@ -22,6 +22,10 @@ void load_img(int fd) {
 		exit(-1);
 	}
 	sb = (struct super_block *)img;
+	if (sb->magic_num != MAGICNUM) {
+		fprintf(stderr, "broken img! please clean the project and make again\n");
+		exit(-1);
+	}
 	show_info();
 }
 

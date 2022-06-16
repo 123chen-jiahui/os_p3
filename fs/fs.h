@@ -1,4 +1,5 @@
 #define BSIZE 1024
+#define MAGICNUM 20010315
 #define ROOTNO 1 // root i-number
 
 

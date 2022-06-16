@@ -13,7 +13,7 @@ extern struct super_block *sb;
 int init() {
 	img = (char *)calloc(1024 * BSIZE, 1);
 	sb = (struct super_block *)img;
-	sb->magic_num = 20010315;
+	sb->magic_num = MAGICNUM;
 	sb->size = 1024 * 1024;
 	sb->nblocks = 1024;
 	sb->ninodes = 100;
