@@ -43,11 +43,13 @@ void usage() {
 }
 
 int main() {
+	system("clear");
 	// load img
 	// if img does not exist, create one
 	int fd = open("img", O_RDWR);
 	if (fd == -1) {
-		printf("can not open img\n");
+		printf("can not open img: img does not exist\n");
+		printf("creating img...\n");
 		init();	
 		fd = open("img", O_RDWR);
 	}

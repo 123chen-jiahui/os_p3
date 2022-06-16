@@ -6,11 +6,19 @@ extern struct super_block *sb;
 
 // 显示文件系统的信息
 void show_info() {
+	printf("\n");
 	printf("load the image file successfully\n");
+	printf("==========================================================\n");
+	printf("this is a tiny and ugly \"file system\" with many bugs\n");
+	printf("file system info:\n");
 	printf("file system version: %u.0\n", sb->version);
 	printf("total size %uKB\n", sb->size / 1024);
 	printf("%u inodes\n", sb->ninodes);
 	printf("%u blocks\n", sb->nblocks);
+	printf("==========================================================\n");
+	printf("\n");
+	printf("now you are in the file system, try commands as follows!\n");
+	printf("\n");
 }
 
 // 给定一个inum，返回struct inode *
@@ -306,6 +314,7 @@ void delete_file(int iparent, int inum) {
 				size = 0;
 				while (size < BSIZE) {
 					if (dir->inum) {
+						/*
 						if (strcmp(dir->name, ".") == 0 || strcmp(dir->name, "..") == 0) {
 							// 如果是当前目录和父目录，直接删除
 							memset(dir, 0, sizeof(struct dirent));
@@ -313,12 +322,20 @@ void delete_file(int iparent, int inum) {
 							struct inode *ip_child = iget(dir->inum);
 							delete_file(inum, ip_child - (struct inode *)(img + BSIZE));
 						}
+						*/
+						if (strcmp(dir->name, ".") && strcmp(dir->name, "..")) {
+							struct inode *ip_child = iget(dir->inum);
+							delete_file(inum, ip_child - (struct inode *)(img + BSIZE));
+
+						}
 					}
 					size += sizeof(struct dirent);
 					dir ++;
-				}
-				// bfree(ip->data[i]); // the bug took me 2 hours!
-				// ip->data[i] = 0;
+				}	
+				/***testing********/
+				bfree(ip->data[i]); // the bug took me 2 hours!
+				ip->data[i] = 0;
+				/***原本是注释的***/
 			}
 		}
 	}
@@ -329,20 +346,24 @@ void delete_file(int iparent, int inum) {
 			block = bget(ip_parent->data[i]);
 			dir = (struct dirent *)block;
 			size = 0;
-			int at_least_one = 0;
+			// int at_least_one = 0; // testing 
 			while (size < BSIZE) {
 				if (dir->inum == inum) {
 					memset(dir, 0, sizeof(struct dirent));
 				} else if (dir->inum != 0) {
-					at_least_one = 1;
+					// at_least_one = 1; // testing
 				}
 				size += sizeof(struct dirent);
 				dir ++;
 			}
+			/*******testing*******/
+			/*
 			if (at_least_one == 0) {
 				bfree(ip_parent->data[i]);
 				ip_parent->data[i] = 0;
 			}
+			*/
+			/*****原本是不注释的**/
 		}
 	}
 
